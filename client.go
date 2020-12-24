@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"crypto/x509"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"log"
@@ -11,7 +10,7 @@ import (
 
 type GunServiceClientImpl struct {
 	RemoteAddr string
-	LocalAddr string
+	LocalAddr  string
 	ServerName string
 }
 
@@ -23,7 +22,7 @@ func (g GunServiceClientImpl) Run() {
 
 	log.Printf("client listening at %v", g.LocalAddr)
 
-	roots, err := x509.SystemCertPool()
+	roots, err := rootCertPool()
 	if err != nil {
 		log.Fatalf("failed to get system certificate pool")
 	}
