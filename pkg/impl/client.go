@@ -2,12 +2,16 @@ package impl
 
 import (
 	"context"
+	"errors"
 	"github.com/Qv2ray/gun/pkg/cert"
 	"github.com/Qv2ray/gun/pkg/proto"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/backoff"
 	"google.golang.org/grpc/credentials"
+	"io"
 	"log"
 	"net"
+	"time"
 )
 
 type GunServiceClientImpl struct {
@@ -28,7 +32,19 @@ func (g GunServiceClientImpl) Run() {
 	if err != nil {
 		log.Fatalf("failed to get system certificate pool")
 	}
-	conn, err := grpc.Dial(g.RemoteAddr, grpc.WithTransportCredentials(credentials.NewClientTLSFromCert(roots, g.ServerName)))
+	conn, err := grpc.Dial(
+		g.RemoteAddr,
+		grpc.WithTransportCredentials(credentials.NewClientTLSFromCert(roots, g.ServerName)),
+		grpc.WithConnectParams(grpc.ConnectParams{
+			Backoff: backoff.Config{
+				BaseDelay:  500 * time.Millisecond,
+				Multiplier: 1.5,
+				Jitter:     0.2,
+				MaxDelay:   19 * time.Millisecond,
+			},
+			MinConnectTimeout: 5 * time.Second,
+		}),
+	)
 	if err != nil {
 		log.Fatalf("failed to dial remote: %v", err)
 	}
@@ -40,6 +56,7 @@ func (g GunServiceClientImpl) Run() {
 			continue
 		}
 
+		log.Printf("accepted: %v <-> %v", accept.LocalAddr(), accept.RemoteAddr())
 		go func() {
 			tun, err := client.Tun(context.Background())
 			if err != nil {
@@ -50,12 +67,14 @@ func (g GunServiceClientImpl) Run() {
 				for {
 					recv, err := tun.Recv()
 					if err != nil {
-						//log.Printf("failed to recv from remote: %v", err)
+						if !errors.Is(err, io.EOF) {
+							log.Printf("remote read conn closed: %v", err)
+						}
 						return
 					}
 					_, err = accept.Write(recv.Data)
 					if err != nil {
-						//log.Printf("failed to write to conn: %v", err)
+						log.Printf("local write conn closed: %v", err)
 						return
 					}
 				}
@@ -64,12 +83,14 @@ func (g GunServiceClientImpl) Run() {
 			for {
 				nRecv, err := accept.Read(buf)
 				if err != nil {
-					//log.Printf("failed to recv from local: %v", err)
+					if !errors.Is(err, io.EOF) {
+						log.Printf("local read conn closed: %v", err)
+					}
 					return
 				}
 				err = tun.Send(&proto.Hunk{Data: buf[:nRecv]})
 				if err != nil {
-					//log.Printf("failed to send to remote: %v", err)
+					log.Printf("remote write conn closed: %v", err)
 					return
 				}
 			}
