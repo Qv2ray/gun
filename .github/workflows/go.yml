@@ -5,7 +5,8 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-
+  release:
+    types: [prereleased]
 
 jobs:
   build:
@@ -44,6 +45,15 @@ jobs:
       with:
         name: gun-dedicated-${{ matrix.GOOS }}-${{ matrix.GOARCH }}
         path: gun-dedicated-${{ matrix.GOOS }}-${{ matrix.GOARCH }}
+    - name: Upload dedicated release
+      uses: svenstaro/upload-release-action@v1-release
+      if: github.event_name == 'release'
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: gun-dedicated-${{ matrix.GOOS }}-${{ matrix.GOARCH }}
+        asset_name: gun-dedicated-${{ matrix.GOOS }}-${{ matrix.GOARCH }}
+        tag: ${{ github.ref }}
+        overwrite: true
     - name: Build SIP003 plugin
       env:
         GOOS: ${{ matrix.GOOS }}
@@ -55,3 +65,12 @@ jobs:
       with:
         name: gun-sip003-${{ matrix.GOOS }}-${{ matrix.GOARCH }}
         path: gun-sip003-${{ matrix.GOOS }}-${{ matrix.GOARCH }}
+    - name: Upload SIP003 plugin release
+      uses: svenstaro/upload-release-action@v1-release
+      if: github.event_name == 'release'
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: gun-sip003-${{ matrix.GOOS }}-${{ matrix.GOARCH }}
+        asset_name: gun-sip003-${{ matrix.GOOS }}-${{ matrix.GOARCH }}
+        tag: ${{ github.ref }}
+        overwrite: true
