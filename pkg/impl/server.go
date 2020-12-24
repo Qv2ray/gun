@@ -86,3 +86,42 @@ func (g GunServiceServerImpl) Tun(server proto.GunService_TunServer) error {
 	err = <-errChan
 	return err
 }
+
+func (g GunServiceServerImpl) TunUDP(server proto.GunService_TunUDPServer) error {
+	conn, err := net.Dial("udp", g.RemoteAddr)
+	if err != nil {
+		return err
+	}
+
+	defer conn.Close()
+
+	errChan := make(chan error)
+
+	go func() {
+		for {
+			if recv, err := server.Recv(); err != nil {
+				errChan <- err
+				return
+			} else if _, err = conn.Write(recv.Data); err != nil {
+				errChan <- err
+				return
+			}
+		}
+	}()
+
+	go func() {
+		buf := make([]byte, 65536)
+		for {
+			if nRecv, err := conn.Read(buf); err != nil {
+				errChan <- err
+				return
+			} else if err = server.Send(&proto.Hunk{Data: buf[:nRecv]}); err != nil {
+				errChan <- err
+				return
+			}
+		}
+	}()
+
+	err = <-errChan
+	return err
+}

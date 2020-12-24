@@ -7,4 +7,5 @@ message Hunk {
 
 service GunService {
   rpc Tun (stream Hunk) returns (stream Hunk);
+  rpc TunUDP (stream Hunk) returns (stream Hunk);
 }
