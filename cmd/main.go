@@ -1,18 +1,18 @@
-//go:generate protoc gun.proto --go_out=plugins=grpc:.
 package main
 
 import (
 	"flag"
+	"github.com/Qv2ray/gun/pkg/impl"
 	"log"
 	"strings"
 )
 
 var (
-	RunMode = flag.String("mode", "", "run mode. must be client or server")
-	LocalAddr = flag.String("local", "", "local address to listen")
+	RunMode    = flag.String("mode", "", "run mode. must be client or server")
+	LocalAddr  = flag.String("local", "", "local address to listen")
 	RemoteAddr = flag.String("remote", "", "remote address to connect")
-	CertPath = flag.String("cert", "", "(server) certificate (*.pem) path")
-	KeyPath = flag.String("key", "", "(server) certificate key (*.key) path")
+	CertPath   = flag.String("cert", "", "(server) certificate (*.pem) path")
+	KeyPath    = flag.String("key", "", "(server) certificate key (*.key) path")
 	ServerName = flag.String("sni", "", "(client) optionally override SNI")
 )
 
@@ -23,13 +23,13 @@ func init() {
 func main() {
 	switch strings.ToLower(*RunMode) {
 	case "client":
-		GunServiceClientImpl{
+		impl.GunServiceClientImpl{
 			RemoteAddr: *RemoteAddr,
 			LocalAddr:  *LocalAddr,
 			ServerName: *ServerName,
 		}.Run()
 	case "server":
-		GunServiceServerImpl{
+		impl.GunServiceServerImpl{
 			RemoteAddr: *RemoteAddr,
 			LocalAddr:  *LocalAddr,
 			CertPath:   *CertPath,

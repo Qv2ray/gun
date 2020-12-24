@@ -1,8 +1,9 @@
-package main
+package impl
 
 import (
 	"context"
-	"crypto/x509"
+	"github.com/Qv2ray/gun/pkg/cert"
+	"github.com/Qv2ray/gun/pkg/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"log"
@@ -11,7 +12,7 @@ import (
 
 type GunServiceClientImpl struct {
 	RemoteAddr string
-	LocalAddr string
+	LocalAddr  string
 	ServerName string
 }
 
@@ -23,7 +24,7 @@ func (g GunServiceClientImpl) Run() {
 
 	log.Printf("client listening at %v", g.LocalAddr)
 
-	roots, err := x509.SystemCertPool()
+	roots, err := cert.GetSystemCertPool()
 	if err != nil {
 		log.Fatalf("failed to get system certificate pool")
 	}
@@ -32,7 +33,7 @@ func (g GunServiceClientImpl) Run() {
 		log.Fatalf("failed to dial remote: %v", err)
 	}
 
-	client := NewGunServiceClient(conn)
+	client := proto.NewGunServiceClient(conn)
 	for {
 		accept, err := local.Accept()
 		if err != nil {
@@ -66,7 +67,7 @@ func (g GunServiceClientImpl) Run() {
 					//log.Printf("failed to recv from local: %v", err)
 					return
 				}
-				err = tun.Send(&Hunk{Data: buf[:nRecv]})
+				err = tun.Send(&proto.Hunk{Data: buf[:nRecv]})
 				if err != nil {
 					//log.Printf("failed to send to remote: %v", err)
 					return
