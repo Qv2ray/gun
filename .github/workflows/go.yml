@@ -14,7 +14,7 @@ jobs:
       fail-fast: false
       matrix: 
         GOOS: [linux, windows, darwin]
-        GOARCH: [amd64, i686]
+        GOARCH: [amd64, 386]
     runs-on: ubuntu-latest
     steps:
     - name: Set up Go 1.x
@@ -36,9 +36,19 @@ jobs:
         GOARCH: ${{ matrix.GOARCH }}
         CGO_ENABLED: 0
       run: go build -o gun-dedicated-${{ matrix.GOOS }}-${{ matrix.GOARCH }} github.com/Qv2ray/gun/cmd
+    - name: Upload dedicated assets
+      uses: actions/upload-artifact@v2.2.1
+      with:
+        name: gun-dedicated-${{ matrix.GOOS }}-${{ matrix.GOARCH }}
+        path: gun-dedicated-${{ matrix.GOOS }}-${{ matrix.GOARCH }}
     - name: Build SIP003 plugin
       env:
         GOOS: ${{ matrix.GOOS }}
         GOARCH: ${{ matrix.GOARCH }}
         CGO_ENABLED: 0
-      run: go build -o gun-dedicated-${{ matrix.GOOS }}-${{ matrix.GOARCH }} github.com/Qv2ray/gun/cmd/sip003
+      run: go build -o gun-sip003-${{ matrix.GOOS }}-${{ matrix.GOARCH }} github.com/Qv2ray/gun/cmd/sip003
+    - name: Upload SIP003 plugin assets
+      uses: actions/upload-artifact@v2.2.1
+      with:
+        name: gun-sip003-${{ matrix.GOOS }}-${{ matrix.GOARCH }}
+        path: gun-sip003-${{ matrix.GOOS }}-${{ matrix.GOARCH }}
