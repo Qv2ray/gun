@@ -10,13 +10,12 @@ import (
 	"net"
 )
 
-type GunServiceServerImpl struct{
+type GunServiceServerImpl struct {
 	RemoteAddr string
-	LocalAddr string
-	CertPath string
-	KeyPath string
+	LocalAddr  string
+	CertPath   string
+	KeyPath    string
 }
-
 
 func (g GunServiceServerImpl) Run() {
 	pub, err := ioutil.ReadFile(g.CertPath)
@@ -84,6 +83,6 @@ func (g GunServiceServerImpl) Tun(server proto.GunService_TunServer) error {
 		}
 	}()
 
-	err = <- errChan
+	err = <-errChan
 	return err
 }
