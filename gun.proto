@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package main;
+
+message Hunk {
+  bytes data = 1;
+}
+
+service GunService {
+  rpc Tun (stream Hunk) returns (stream Hunk);
+}
