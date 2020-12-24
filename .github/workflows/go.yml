@@ -15,6 +15,9 @@ jobs:
       matrix: 
         GOOS: [linux, windows, darwin]
         GOARCH: [amd64, 386]
+        exclude: 
+          - GOOS: darwin
+            GOARCH: 386
     runs-on: ubuntu-latest
     steps:
     - name: Set up Go 1.x
