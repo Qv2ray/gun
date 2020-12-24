@@ -1,6 +1,5 @@
 syntax = "proto3";
-
-package main;
+option go_package = "github.com/Qv2ray/gun/pkg/proto";
 
 message Hunk {
   bytes data = 1;

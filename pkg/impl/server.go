@@ -1,7 +1,8 @@
-package main
+package impl
 
 import (
 	"crypto/tls"
+	"github.com/Qv2ray/gun/pkg/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"io/ioutil"
@@ -33,7 +34,7 @@ func (g GunServiceServerImpl) Run() {
 	log.Println("certificate pair built successfully")
 
 	s := grpc.NewServer(grpc.Creds(credentials.NewServerTLSFromCert(&cert)))
-	RegisterGunServiceServer(s, GunServiceServerImpl{
+	proto.RegisterGunServiceServer(s, GunServiceServerImpl{
 		RemoteAddr: g.RemoteAddr,
 	})
 
@@ -48,7 +49,7 @@ func (g GunServiceServerImpl) Run() {
 	log.Fatalf("server abort: %v", e)
 }
 
-func (g GunServiceServerImpl) Tun(server GunService_TunServer) error {
+func (g GunServiceServerImpl) Tun(server proto.GunService_TunServer) error {
 	conn, err := net.Dial("tcp", g.RemoteAddr)
 	if err != nil {
 		return err
@@ -76,7 +77,7 @@ func (g GunServiceServerImpl) Tun(server GunService_TunServer) error {
 			if nRecv, err := conn.Read(buf); err != nil {
 				errChan <- err
 				return
-			} else if err = server.Send(&Hunk{Data: buf[:nRecv]}); err != nil {
+			} else if err = server.Send(&proto.Hunk{Data: buf[:nRecv]}); err != nil {
 				errChan <- err
 				return
 			}

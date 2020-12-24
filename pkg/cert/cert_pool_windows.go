@@ -1,4 +1,6 @@
-package main
+// +build windows
+
+package cert
 
 import (
 	"crypto/x509"
@@ -7,7 +9,7 @@ import (
 	"unsafe"
 )
 
-func rootCertPool() (*x509.CertPool, error) {
+func GetSystemCertPool() (*x509.CertPool, error) {
 	rootU16Ptr, err := syscall.UTF16PtrFromString("Root")
 	if err != nil {
 		return nil, err
