@@ -1,0 +1,25 @@
+                              _        ___   ___ ____  
+                             (_)      / _ \ / _ \___ \ 
+   __ _ _   _ _ __ ______ ___ _ _ __ | | | | | | |__) |
+  / _` | | | | '_ \______/ __| | '_ \| | | | | | |__ < 
+ | (_| | |_| | | | |     \__ \ | |_) | |_| | |_| |__) |
+  \__, |\__,_|_| |_|     |___/_| .__/ \___/ \___/____/ 
+   __/ |                       | |                     
+  |___/                        |_|                     
+
+=== Intro ===
+This is a specialized version of `gun`, which works as a SIP003 plugin.
+For a detailed view of SIP003 specification, please go to https://shadowsocks.org/en/wiki/Plugin.html.
+
+=== Notes ===
+Plugin Argument Examples:
+* Server:
+    server:/path/to/cert.pem:/path/to/key.key
+* Client:
+    client
+* Client, with customized SNI:
+    client:customized-sni.example.com
+
+=== Credits ===
+@studentmain
+@ducksoft
