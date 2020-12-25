@@ -23,7 +23,7 @@ gun -mode server -local :443 -remote 127.0.0.1:8899 -cert cert.pem -key cert.key
 ### Client
 1. Assume the domain of server is `grpc.example.com`.
 
-2. Run locally and presist. This will tunnel connections from `127.0.0.1:8899` to remote.
+2. Run locally and persist. This will tunnel connections from `127.0.0.1:8899` to remote.
 ```bash
 gun -mode client -local 127.0.0.1:8899 -remote grpc.example.com:443
 ```
