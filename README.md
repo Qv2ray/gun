@@ -1,13 +1,9 @@
 # gun
-Grpc tUNnel over Cloudflare
+![branding](branding.png)
 
-## Headline
-```
-发一个自用了一个晚上的代理。
-程序本身很简单，用来过 CloudFlare 足够了。
-```
+You know what it means.
 
-## Example
+## Guide
 ### Server
 1. Go to your domain in CloudFlare. In "Network" tab, turn on gRPC.
 
