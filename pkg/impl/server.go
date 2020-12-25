@@ -2,12 +2,13 @@ package impl
 
 import (
 	"crypto/tls"
-	"github.com/Qv2ray/gun/pkg/proto"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 	"io/ioutil"
 	"log"
 	"net"
+
+	"github.com/Qv2ray/gun/pkg/proto"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
 type GunServiceServerImpl struct {
@@ -83,6 +84,52 @@ func (g GunServiceServerImpl) Tun(server proto.GunService_TunServer) error {
 		}
 	}()
 
+	err = <-errChan
+	return err
+}
+
+func (g GunServiceServerImpl) TunDatagram(server proto.GunService_TunDatagramServer) error {
+	raddr, err := net.ResolveUDPAddr("udp", g.RemoteAddr)
+	if err != nil {
+		return err
+	}
+
+	conn, err := net.ListenPacket("udp", ":0")
+	if err != nil {
+		return err
+	}
+
+	defer conn.Close()
+
+	errChan := make(chan error)
+	go func() {
+		for {
+			if recv, err := server.Recv(); err != nil {
+				errChan <- err
+				return
+			} else if _, err = conn.WriteTo(recv.Data, raddr); err != nil {
+				errChan <- err
+				return
+			}
+		}
+	}()
+	go func() {
+		buf := make([]byte, 32768)
+		for {
+			nRecv, remote, err := conn.ReadFrom(buf)
+			if err != nil {
+				errChan <- err
+				return
+			}
+			if remote.String() != raddr.String() {
+				continue
+			}
+			if err = server.Send(&proto.Hunk{Data: buf[:nRecv]}); err != nil {
+				errChan <- err
+				return
+			}
+		}
+	}()
 	err = <-errChan
 	return err
 }
