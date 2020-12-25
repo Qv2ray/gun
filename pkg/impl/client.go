@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net"
+	"sync"
 	"time"
 
 	"github.com/Qv2ray/gun/pkg/proto"
@@ -19,26 +20,24 @@ type GunServiceClientImpl struct {
 	RemoteAddr string
 	LocalAddr  string
 	ServerName string
-	Nat        NatTable
+	Nat        *sync.Map
 }
 
-type NatTable map[string]proto.GunService_TunDatagramClient
-
 func (g GunServiceClientImpl) Run() {
-	g.Nat = make(NatTable)
+	g.Nat = new(sync.Map)
 	// start TCP local
 	local, err := net.Listen("tcp", g.LocalAddr)
 	if err != nil {
 		log.Fatalf("failed to listen local: %v", err)
 	}
 
-	log.Printf("client listening at %v", g.LocalAddr)
+	log.Printf("client listening tcp at %v", g.LocalAddr)
 	localUdp, err := net.ListenPacket("udp", g.LocalAddr)
 	if err != nil {
 		log.Fatalf("failed to listen udp local: %v", err)
 	}
 
-	log.Printf("client listening at %v", g.LocalAddr)
+	log.Printf("client listening udp at %v", g.LocalAddr)
 
 	roots, err := cert.GetSystemCertPool()
 	if err != nil {
@@ -123,16 +122,17 @@ func (g GunServiceClientImpl) udpLoop(local net.PacketConn, client proto.GunServ
 		if err != nil {
 			log.Printf("failed to read udp packet: %v", err)
 		}
-		addrStr :=addr.String()
 		// associate to exist tun
-		tun, ok := g.Nat[addrStr]
-		if !ok {
+		var tun proto.GunService_TunDatagramClient
+		if t, ok := g.Nat.Load(addr); !ok {
 			tun, err = client.TunDatagram(context.Background())
 			if err != nil {
 				log.Printf("failed to create context: %v", err)
 				return
 			}
-			g.Nat[addrStr] = tun
+			g.Nat.Store(addr, tun)
+		} else {
+			tun = t.(proto.GunService_TunDatagramClient)
 		}
 		err = tun.Send(&proto.Hunk{Data: buf[:l]})
 		if err != nil {
