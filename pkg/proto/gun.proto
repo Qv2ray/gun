@@ -5,20 +5,6 @@ message Hunk {
   bytes data = 1;
 }
 
-message Datagram {
-  int32 map_id = 1;
-  enum AddressType {
-    none = 0;
-    ipv4 = 1;
-    domain = 3;
-    ipv6 = 4;
-  }
-  AddressType address_type = 2;
-  bytes address = 3;
-  int32 port = 4;
-  bytes data = 5;
-}
-
 service GunService {
   rpc Tun (stream Hunk) returns (stream Hunk);
   rpc TunDatagram (stream Hunk) returns (stream Hunk);
