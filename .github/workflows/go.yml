@@ -17,8 +17,14 @@ jobs:
         GOOS: [linux, windows, darwin, android]
         GOARCH: [386, amd64, arm, arm64]
         exclude: 
-          - { GOOS: darwin, GOARCH: arm }
-          - { GOOS: darwin, GOARCH: 386 }
+        - { GOOS: darwin, GOARCH: arm }
+        - { GOOS: darwin, GOARCH: arm64 }
+        - { GOOS: darwin, GOARCH: 386 }
+        - { GOOS: windows, GOARCH: arm64 }
+        - { GOOS: windows, GOARCH: arm64 }
+        - { GOOS: android, GOARCH: 386 }
+        - { GOOS: android, GOARCH: amd64 }
+        - { GOOS: android, GOARCH: arm }
     runs-on: ubuntu-latest
     steps:
     - name: Set up Go 1.x
