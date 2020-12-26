@@ -26,8 +26,8 @@ func main() {
 		}.Run()
 	case "server":
 		impl.GunServiceServerImpl{
-			RemoteAddr: arguments.RemoteAddr,
-			LocalAddr:  arguments.LocalAddr,
+			RemoteAddr: arguments.LocalAddr,
+			LocalAddr:  arguments.RemoteAddr,
 			CertPath:   options["cert"],
 			KeyPath:    options["key"],
 		}.Run()
