@@ -14,11 +14,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix: 
-        GOOS: [linux, windows, darwin]
-        GOARCH: [amd64, 386]
+        GOOS: [linux, windows, darwin, android]
+        GOARCH: [386, amd64, arm, arm64]
         exclude: 
-          - GOOS: darwin
-            GOARCH: 386
+          - { GOOS: darwin, GOARCH: arm }
+          - { GOOS: darwin, GOARCH: 386 }
     runs-on: ubuntu-latest
     steps:
     - name: Set up Go 1.x
