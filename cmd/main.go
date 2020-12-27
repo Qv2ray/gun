@@ -14,6 +14,7 @@ var (
 	CertPath   = flag.String("cert", "", "(server) certificate (*.pem) path")
 	KeyPath    = flag.String("key", "", "(server) certificate key (*.key) path")
 	ServerName = flag.String("sni", "", "(client) optionally override SNI")
+	Cleartext  = flag.Bool("cleartext", false, "use insecure HTTP/2 cleartext mode")
 )
 
 func init() {
@@ -27,6 +28,7 @@ func main() {
 			RemoteAddr: *RemoteAddr,
 			LocalAddr:  *LocalAddr,
 			ServerName: *ServerName,
+			Cleartext:  *Cleartext,
 		}.Run()
 	case "server":
 		impl.GunServiceServerImpl{
@@ -34,6 +36,7 @@ func main() {
 			LocalAddr:  *LocalAddr,
 			CertPath:   *CertPath,
 			KeyPath:    *KeyPath,
+			Cleartext:  *Cleartext,
 		}.Run()
 	default:
 		log.Fatalf("invalid run mode. must be client or server.")

@@ -1,13 +1,9 @@
 # gun
-Grpc tUNnel over Cloudflare
+![branding](branding.png)
 
-## Headline
-```
-发一个自用了一个晚上的代理。
-程序本身很简单，用来过 CloudFlare 足够了。
-```
+You know what it means.
 
-## Example
+## Guide
 ### Server
 1. Go to your domain in CloudFlare. In "Network" tab, turn on gRPC.
 
@@ -23,7 +19,7 @@ gun -mode server -local :443 -remote 127.0.0.1:8899 -cert cert.pem -key cert.key
 ### Client
 1. Assume the domain of server is `grpc.example.com`.
 
-2. Run locally and presist. This will tunnel connections from `127.0.0.1:8899` to remote.
+2. Run locally and persist. This will tunnel connections from `127.0.0.1:8899` to remote.
 ```bash
 gun -mode client -local 127.0.0.1:8899 -remote grpc.example.com:443
 ```

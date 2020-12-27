@@ -3,12 +3,13 @@ package impl
 import (
 	"context"
 	"errors"
-	"github.com/Qv2ray/gun/pkg/cert"
 	"io"
 	"log"
 	"net"
 	"sync"
 	"time"
+
+	"github.com/Qv2ray/gun/pkg/cert"
 
 	"github.com/Qv2ray/gun/pkg/proto"
 	"google.golang.org/grpc"
@@ -20,6 +21,7 @@ type GunServiceClientImpl struct {
 	RemoteAddr string
 	LocalAddr  string
 	ServerName string
+	Cleartext  bool
 	Nat        *sync.Map
 }
 
@@ -30,7 +32,6 @@ func (g GunServiceClientImpl) Run() {
 	if err != nil {
 		log.Fatalf("failed to listen local: %v", err)
 	}
-
 	log.Printf("client listening tcp at %v", g.LocalAddr)
 	localUdp, err := net.ListenPacket("udp", g.LocalAddr)
 	if err != nil {
@@ -39,13 +40,19 @@ func (g GunServiceClientImpl) Run() {
 
 	log.Printf("client listening udp at %v", g.LocalAddr)
 
-	roots, err := cert.GetSystemCertPool()
-	if err != nil {
-		log.Fatalf("failed to get system certificate pool")
+	var dialOption grpc.DialOption
+	if !g.Cleartext {
+		roots, err := cert.GetSystemCertPool()
+		if err != nil {
+			log.Fatalf("failed to get system certificate pool")
+		}
+		dialOption = grpc.WithTransportCredentials(credentials.NewClientTLSFromCert(roots, g.ServerName))
+	} else {
+		dialOption = grpc.WithInsecure()
 	}
 	conn, err := grpc.Dial(
 		g.RemoteAddr,
-		grpc.WithTransportCredentials(credentials.NewClientTLSFromCert(roots, g.ServerName)),
+		dialOption,
 		grpc.WithConnectParams(grpc.ConnectParams{
 			Backoff: backoff.Config{
 				BaseDelay:  500 * time.Millisecond,
