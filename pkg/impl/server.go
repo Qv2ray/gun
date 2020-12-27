@@ -99,11 +99,11 @@ func (g GunServiceServerImpl) TunDatagram(server proto.GunService_TunDatagramSer
 	if err != nil {
 		return err
 	}
-
 	conn, err := net.ListenPacket("udp", ":0")
 	if err != nil {
 		return err
 	}
+	log.Printf("start new udp session %v <-> %v", conn.LocalAddr(), g.RemoteAddr)
 
 	defer conn.Close()
 

@@ -78,8 +78,9 @@ func (g GunServiceClientImpl) Run() {
 	}
 
 	client := proto.NewGunServiceClient(conn)
-	// work loop
+	// work loops
 	go g.tcpLoop(local, client)
+	go g.scanInactiveSession(2 * time.Minute)
 	g.udpLoop(localUdp, client)
 }
 
@@ -185,13 +186,13 @@ func (g GunServiceClientImpl) udpLoop(local net.PacketConn, client proto.GunServ
 		err = tun.Send(&proto.Hunk{Data: buf[:l]})
 		if err != nil {
 			log.Printf("remote write packet conn closed: %v", err)
-			return
+			continue
 		}
 		session.LastActive = time.Now()
 
 		if sessionReused {
 			// there's already a udp down link goroutine, let it handle down link
-			return
+			continue
 		}
 
 		// down link
@@ -202,6 +203,8 @@ func (g GunServiceClientImpl) udpLoop(local net.PacketConn, client proto.GunServ
 					if !errors.Is(err, io.EOF) {
 						log.Printf("remote read packet conn closed: %v", err)
 					}
+					// when error, it's obvious
+					// when eof, it means server timed out, new assoc needed
 					g.clearUdpSession(addrStr)
 					return
 				}
@@ -216,8 +219,7 @@ func (g GunServiceClientImpl) udpLoop(local net.PacketConn, client proto.GunServ
 	}
 }
 
-func (g GunServiceClientImpl) scanInactiveSession() {
-	timeout := 2 * time.Minute
+func (g GunServiceClientImpl) scanInactiveSession(timeout time.Duration) {
 	tick := time.NewTicker(timeout)
 	for {
 		<-tick.C
@@ -238,11 +240,11 @@ func (g GunServiceClientImpl) scanInactiveSession() {
 }
 
 func (g GunServiceClientImpl) clearUdpSession(name string) {
-	log.Printf("clear udp session %v", name)
 	s, ok := g.UdpSessions.Load(name)
 	if !ok {
 		return
 	}
+	log.Printf("clear udp session %v", name)
 	session := s.(ClientUdpSession)
 	e := session.Tun.CloseSend()
 	if e != nil {
