@@ -18,15 +18,20 @@ import (
 )
 
 type GunServiceClientImpl struct {
-	RemoteAddr string
-	LocalAddr  string
-	ServerName string
-	Cleartext  bool
-	Nat        *sync.Map
+	RemoteAddr  string
+	LocalAddr   string
+	ServerName  string
+	Cleartext   bool
+	UdpSessions *sync.Map
+}
+
+type ClientUdpSession struct {
+	LastActive time.Time
+	Tun        proto.GunService_TunDatagramClient
 }
 
 func (g GunServiceClientImpl) Run() {
-	g.Nat = new(sync.Map)
+	g.UdpSessions = new(sync.Map)
 
 	// start TCP local
 	local, err := net.Listen("tcp", g.LocalAddr)
@@ -128,6 +133,9 @@ func (g GunServiceClientImpl) tcpLoop(local net.Listener, client proto.GunServic
 						if !errors.Is(err, io.EOF) {
 							log.Printf("local read conn closed: %v", err)
 						}
+						if err = tun.CloseSend(); err != nil {
+							log.Printf("remote close uplink conn fail: %v", err)
+						}
 						return
 					}
 					err = tun.Send(&proto.Hunk{Data: buf[:nRecv]})
@@ -150,33 +158,42 @@ func (g GunServiceClientImpl) udpLoop(local net.PacketConn, client proto.GunServ
 		if err != nil {
 			log.Printf("failed to read udp packet: %v", err)
 		}
+		addrStr := addr.String()
 
-		// associate to exist tun
-		var tun proto.GunService_TunDatagramClient
-		t, sessionExist := g.Nat.Load(addr)
-		if !sessionExist {
-			// not exist, init new rpc
-			tun, err = client.TunDatagram(context.Background())
+		// associate to exist session
+		var session ClientUdpSession
+		s, sessionReused := g.UdpSessions.Load(addrStr)
+		if !sessionReused {
+			// not exist, init new session
+			t, err := client.TunDatagram(context.Background())
 			if err != nil {
 				log.Printf("failed to create context: %v", err)
 				return
 			}
-			g.Nat.Store(addr, tun)
+
+			session = ClientUdpSession{
+				LastActive: time.Now(),
+				Tun:        t,
+			}
+			g.UdpSessions.Store(addrStr, session)
 			log.Printf("readfrom: %v <-> %v", local.LocalAddr(), addr)
 		} else {
-			tun = t.(proto.GunService_TunDatagramClient)
+			session = s.(ClientUdpSession)
 		}
 
+		tun := session.Tun
 		err = tun.Send(&proto.Hunk{Data: buf[:l]})
 		if err != nil {
 			log.Printf("remote write packet conn closed: %v", err)
 			return
 		}
+		session.LastActive = time.Now()
 
-		if sessionExist {
+		if sessionReused {
 			// there's already a udp down link goroutine, let it handle down link
 			return
 		}
+
 		// down link
 		go func() {
 			for {
@@ -185,6 +202,7 @@ func (g GunServiceClientImpl) udpLoop(local net.PacketConn, client proto.GunServ
 					if !errors.Is(err, io.EOF) {
 						log.Printf("remote read packet conn closed: %v", err)
 					}
+					g.clearUdpSession(addrStr)
 					return
 				}
 				_, err = local.WriteTo(recv.Data, addr)
@@ -192,7 +210,43 @@ func (g GunServiceClientImpl) udpLoop(local net.PacketConn, client proto.GunServ
 					log.Printf("local write packet conn closed: %v", err)
 					return
 				}
+				session.LastActive = time.Now()
 			}
 		}()
 	}
+}
+
+func (g GunServiceClientImpl) scanInactiveSession() {
+	timeout := 2 * time.Minute
+	tick := time.NewTicker(timeout)
+	for {
+		<-tick.C
+		needClear := make([]string, 0)
+		now := time.Now()
+		g.UdpSessions.Range(func(key, value interface{}) bool {
+			session := value.(ClientUdpSession)
+			if session.LastActive.Add(timeout).Before(now) {
+				needClear = append(needClear, key.(string))
+			}
+			return true
+		})
+
+		for _, k := range needClear {
+			g.clearUdpSession(k)
+		}
+	}
+}
+
+func (g GunServiceClientImpl) clearUdpSession(name string) {
+	log.Printf("clear udp session %v", name)
+	s, ok := g.UdpSessions.Load(name)
+	if !ok {
+		return
+	}
+	session := s.(ClientUdpSession)
+	e := session.Tun.CloseSend()
+	if e != nil {
+		log.Printf("error when clear session %v, %v", name, e)
+	}
+	g.UdpSessions.Delete(name)
 }
