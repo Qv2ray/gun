@@ -18,6 +18,7 @@ type GunServiceClientImpl struct {
 	RemoteAddr string
 	LocalAddr  string
 	ServerName string
+	Cleartext  bool
 }
 
 func (g GunServiceClientImpl) Run() {
@@ -27,14 +28,19 @@ func (g GunServiceClientImpl) Run() {
 	}
 
 	log.Printf("client listening at %v", g.LocalAddr)
-
-	roots, err := cert.GetSystemCertPool()
-	if err != nil {
-		log.Fatalf("failed to get system certificate pool")
+	var dialOption grpc.DialOption
+	if !g.Cleartext {
+		roots, err := cert.GetSystemCertPool()
+		if err != nil {
+			log.Fatalf("failed to get system certificate pool")
+		}
+		dialOption = grpc.WithTransportCredentials(credentials.NewClientTLSFromCert(roots, g.ServerName))
+	} else {
+		dialOption = grpc.WithInsecure()
 	}
 	conn, err := grpc.Dial(
 		g.RemoteAddr,
-		grpc.WithTransportCredentials(credentials.NewClientTLSFromCert(roots, g.ServerName)),
+		dialOption,
 		grpc.WithConnectParams(grpc.ConnectParams{
 			Backoff: backoff.Config{
 				BaseDelay:  500 * time.Millisecond,
