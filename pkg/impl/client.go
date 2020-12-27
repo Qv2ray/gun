@@ -27,19 +27,22 @@ type GunServiceClientImpl struct {
 
 func (g GunServiceClientImpl) Run() {
 	g.Nat = new(sync.Map)
+
 	// start TCP local
 	local, err := net.Listen("tcp", g.LocalAddr)
 	if err != nil {
 		log.Fatalf("failed to listen local: %v", err)
 	}
 	log.Printf("client listening tcp at %v", g.LocalAddr)
+
+	// start UDP local
 	localUdp, err := net.ListenPacket("udp", g.LocalAddr)
 	if err != nil {
 		log.Fatalf("failed to listen udp local: %v", err)
 	}
-
 	log.Printf("client listening udp at %v", g.LocalAddr)
 
+	// select h2/h2c
 	var dialOption grpc.DialOption
 	if !g.Cleartext {
 		roots, err := cert.GetSystemCertPool()
@@ -50,6 +53,8 @@ func (g GunServiceClientImpl) Run() {
 	} else {
 		dialOption = grpc.WithInsecure()
 	}
+
+	// dial
 	conn, err := grpc.Dial(
 		g.RemoteAddr,
 		dialOption,
@@ -68,7 +73,7 @@ func (g GunServiceClientImpl) Run() {
 	}
 
 	client := proto.NewGunServiceClient(conn)
-	// TCP work loop
+	// work loop
 	go g.tcpLoop(local, client)
 	g.udpLoop(localUdp, client)
 }
@@ -82,12 +87,21 @@ func (g GunServiceClientImpl) tcpLoop(local net.Listener, client proto.GunServic
 
 		log.Printf("accepted: %v <-> %v", accept.LocalAddr(), accept.RemoteAddr())
 		go func() {
+			defer accept.Close()
+
+			// connect rpc
 			tun, err := client.Tun(context.Background())
 			if err != nil {
 				log.Printf("failed to create context: %v", err)
 				return
 			}
+
+			var wg sync.WaitGroup
+			wg.Add(2)
+
+			// down link
 			go func() {
+				defer wg.Done()
 				for {
 					recv, err := tun.Recv()
 					if err != nil {
@@ -103,21 +117,28 @@ func (g GunServiceClientImpl) tcpLoop(local net.Listener, client proto.GunServic
 					}
 				}
 			}()
-			buf := make([]byte, 32768)
-			for {
-				nRecv, err := accept.Read(buf)
-				if err != nil {
-					if !errors.Is(err, io.EOF) {
-						log.Printf("local read conn closed: %v", err)
+
+			// up link
+			go func() {
+				defer wg.Done()
+				buf := make([]byte, 32768)
+				for {
+					nRecv, err := accept.Read(buf)
+					if err != nil {
+						if !errors.Is(err, io.EOF) {
+							log.Printf("local read conn closed: %v", err)
+						}
+						return
 					}
-					return
+					err = tun.Send(&proto.Hunk{Data: buf[:nRecv]})
+					if err != nil {
+						log.Printf("remote write conn closed: %v", err)
+						return
+					}
 				}
-				err = tun.Send(&proto.Hunk{Data: buf[:nRecv]})
-				if err != nil {
-					log.Printf("remote write conn closed: %v", err)
-					return
-				}
-			}
+			}()
+
+			wg.Wait()
 		}()
 	}
 }
@@ -129,23 +150,34 @@ func (g GunServiceClientImpl) udpLoop(local net.PacketConn, client proto.GunServ
 		if err != nil {
 			log.Printf("failed to read udp packet: %v", err)
 		}
+
 		// associate to exist tun
 		var tun proto.GunService_TunDatagramClient
-		if t, ok := g.Nat.Load(addr); !ok {
+		t, sessionExist := g.Nat.Load(addr)
+		if !sessionExist {
+			// not exist, init new rpc
 			tun, err = client.TunDatagram(context.Background())
 			if err != nil {
 				log.Printf("failed to create context: %v", err)
 				return
 			}
 			g.Nat.Store(addr, tun)
+			log.Printf("readfrom: %v <-> %v", local.LocalAddr(), addr)
 		} else {
 			tun = t.(proto.GunService_TunDatagramClient)
 		}
+
 		err = tun.Send(&proto.Hunk{Data: buf[:l]})
 		if err != nil {
 			log.Printf("remote write packet conn closed: %v", err)
 			return
 		}
+
+		if sessionExist {
+			// there's already a udp down link goroutine, let it handle down link
+			return
+		}
+		// down link
 		go func() {
 			for {
 				recv, err := tun.Recv()
