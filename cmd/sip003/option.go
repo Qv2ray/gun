@@ -8,8 +8,10 @@ import (
 type PluginOptions map[string]string
 
 // server:/path/to/cert.pem:/path/to/cert.key
+// server:cleartext
 // client
 // client:new-server-name.example.com
+// client:cleartext
 func ParsePluginOptions(options string) (parsedOptions PluginOptions, err error) {
 	parts := strings.Split(options, ":")
 	switch parts[0] {
@@ -20,6 +22,12 @@ func ParsePluginOptions(options string) (parsedOptions PluginOptions, err error)
 				"mode": "client",
 			}, nil
 		case 2:
+			if parts[1] == "cleartext" {
+				return map[string]string{
+					"mode":      "client",
+					"cleartext": "cleartext",
+				}, nil
+			}
 			return map[string]string{
 				"mode": "client",
 				"sni":  parts[1],
@@ -29,6 +37,11 @@ func ParsePluginOptions(options string) (parsedOptions PluginOptions, err error)
 		}
 	case "server":
 		switch len(parts) {
+		case 2:
+			return map[string]string{
+				"mode":      "server",
+				"cleartext": "cleartext",
+			}, nil
 		case 3:
 			return map[string]string{
 				"mode": "server",
@@ -36,7 +49,7 @@ func ParsePluginOptions(options string) (parsedOptions PluginOptions, err error)
 				"key":  parts[2],
 			}, nil
 		default:
-			return nil, errors.New("server mode expect 2 extra arguments")
+			return nil, errors.New("server mode expect 1 or 2 extra arguments")
 		}
 	default:
 		return nil, errors.New("unknown mode")

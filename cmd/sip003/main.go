@@ -23,6 +23,7 @@ func main() {
 			RemoteAddr: arguments.RemoteAddr,
 			LocalAddr:  arguments.LocalAddr,
 			ServerName: options["sni"],
+			Cleartext:  options["cleartext"] == "cleartext",
 		}.Run()
 	case "server":
 		impl.GunServiceServerImpl{
@@ -30,6 +31,7 @@ func main() {
 			LocalAddr:  arguments.RemoteAddr,
 			CertPath:   options["cert"],
 			KeyPath:    options["key"],
+			Cleartext:  options["cleartext"] == "cleartext",
 		}.Run()
 	default:
 		log.Fatalf("unknown run mode")

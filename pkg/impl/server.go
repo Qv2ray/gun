@@ -15,24 +15,30 @@ type GunServiceServerImpl struct {
 	LocalAddr  string
 	CertPath   string
 	KeyPath    string
+	Cleartext  bool
 }
 
 func (g GunServiceServerImpl) Run() {
-	pub, err := ioutil.ReadFile(g.CertPath)
-	if err != nil {
-		log.Fatalf("failed to read certificate: %v", err)
+	var s *grpc.Server
+	if !g.Cleartext {
+		pub, err := ioutil.ReadFile(g.CertPath)
+		if err != nil {
+			log.Fatalf("failed to read certificate: %v", err)
+		}
+		key, err := ioutil.ReadFile(g.KeyPath)
+		if err != nil {
+			log.Fatalf("failed to read certificate key: %v", err)
+		}
+		cert, e := tls.X509KeyPair(pub, key)
+		if e != nil {
+			log.Fatalf("failed to build certificate pair: %v", e)
+		}
+		log.Println("certificate pair built successfully")
+		s = grpc.NewServer(grpc.Creds(credentials.NewServerTLSFromCert(&cert)))
+	} else {
+		s = grpc.NewServer()
 	}
-	key, err := ioutil.ReadFile(g.KeyPath)
-	if err != nil {
-		log.Fatalf("failed to read certificate key: %v", err)
-	}
-	cert, e := tls.X509KeyPair(pub, key)
-	if e != nil {
-		log.Fatalf("failed to build certificate pair: %v", e)
-	}
-	log.Println("certificate pair built successfully")
 
-	s := grpc.NewServer(grpc.Creds(credentials.NewServerTLSFromCert(&cert)))
 	proto.RegisterGunServiceServer(s, GunServiceServerImpl{
 		RemoteAddr: g.RemoteAddr,
 	})
