@@ -10,13 +10,18 @@
 === Intro ===
 This is a specialized version of `gun`, which works as a SIP003 plugin.
 For a detailed view of SIP003 specification, please go to https://shadowsocks.org/en/wiki/Plugin.html.
+Please visit your shadowsocks implementation's document for configuration instruction.
 
 === Notes ===
 Plugin Argument Examples:
 * Server:
     server:/path/to/cert.pem:/path/to/key.key
+* Server, without TLS
+    server:cleartext
 * Client:
     client
+* Client, without TLS
+    client:cleartext
 * Client, with customized SNI:
     client:customized-sni.example.com
 
