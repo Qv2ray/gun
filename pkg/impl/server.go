@@ -2,8 +2,8 @@ package impl
 
 import (
 	"crypto/tls"
-	"errors"
-	"io"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"io/ioutil"
 	"log"
 	"net"
@@ -46,9 +46,7 @@ func (g GunServiceServerImpl) Run() {
 		s = grpc.NewServer()
 	}
 
-	proto.RegisterGunServiceServer(s, GunServiceServerImpl{
-		RemoteAddr: g.RemoteAddr,
-	})
+	proto.RegisterGunServiceServer(s, g)
 
 	// listen local
 	listener, e := net.Listen("tcp", g.LocalAddr)
@@ -137,7 +135,7 @@ func (g GunServiceServerImpl) TunDatagram(server proto.GunService_TunDatagramSer
 		defer wg.Done()
 		for {
 			if recv, err := server.Recv(); err != nil {
-				if !errors.Is(err, io.EOF) {
+				if status.Code(err) != codes.Unavailable && status.Code(err) != codes.OutOfRange {
 					// report only when not eof, eof is not error
 					errChan <- err
 				} else {

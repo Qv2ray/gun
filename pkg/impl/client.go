@@ -2,8 +2,8 @@ package impl
 
 import (
 	"context"
-	"errors"
-	"io"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"log"
 	"net"
 	"sync"
@@ -111,7 +111,7 @@ func (g GunServiceClientImpl) tcpLoop(local net.Listener, client proto.GunServic
 				for {
 					recv, err := tun.Recv()
 					if err != nil {
-						if !errors.Is(err, io.EOF) {
+						if status.Code(err) != codes.Unavailable && status.Code(err) != codes.OutOfRange {
 							log.Printf("remote read conn closed: %v", err)
 						}
 						return
@@ -131,7 +131,7 @@ func (g GunServiceClientImpl) tcpLoop(local net.Listener, client proto.GunServic
 				for {
 					nRecv, err := accept.Read(buf)
 					if err != nil {
-						if !errors.Is(err, io.EOF) {
+						if status.Code(err) != codes.Unavailable && status.Code(err) != codes.OutOfRange {
 							log.Printf("local read conn closed: %v", err)
 						}
 						if err = tun.CloseSend(); err != nil {
@@ -200,7 +200,7 @@ func (g GunServiceClientImpl) udpLoop(local net.PacketConn, client proto.GunServ
 			for {
 				recv, err := tun.Recv()
 				if err != nil {
-					if !errors.Is(err, io.EOF) {
+					if status.Code(err) != codes.Unavailable && status.Code(err) != codes.OutOfRange {
 						log.Printf("remote read packet conn closed: %v", err)
 					}
 					// when error, it's obvious
