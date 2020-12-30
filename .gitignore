@@ -17,3 +17,7 @@
 # GoLand
 *.iml
 /.idea/
+
+/.run/
+*.pem
+*.key
