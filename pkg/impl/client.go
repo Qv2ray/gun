@@ -23,6 +23,8 @@ type GunServiceClientImpl struct {
 	ServerName  string
 	Cleartext   bool
 	UdpSessions *sync.Map
+
+	ServiceName string
 }
 
 type ClientUdpSession struct {
@@ -85,6 +87,7 @@ func (g GunServiceClientImpl) Run() {
 }
 
 func (g GunServiceClientImpl) tcpLoop(local net.Listener, client proto.GunServiceClient) {
+	clientX := client.(proto.GunServiceClientX)
 	for {
 		accept, err := local.Accept()
 		if err != nil {
@@ -96,7 +99,7 @@ func (g GunServiceClientImpl) tcpLoop(local net.Listener, client proto.GunServic
 			defer accept.Close()
 
 			// connect rpc
-			tun, err := client.Tun(context.Background())
+			tun, err := clientX.TunCustomName(context.Background(), g.ServiceName)
 			if err != nil {
 				log.Printf("failed to create context: %v", err)
 				return

@@ -22,6 +22,8 @@ type GunServiceServerImpl struct {
 	KeyPath     string
 	Cleartext   bool
 	UdpSessions *sync.Map
+
+	ServiceName string
 }
 
 func (g GunServiceServerImpl) Run() {
@@ -46,7 +48,7 @@ func (g GunServiceServerImpl) Run() {
 		s = grpc.NewServer()
 	}
 
-	proto.RegisterGunServiceServer(s, g)
+	proto.RegisterGunServiceServerX(s, g, g.ServiceName)
 
 	// listen local
 	listener, e := net.Listen("tcp", g.LocalAddr)
