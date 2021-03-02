@@ -37,4 +37,5 @@ There's also a SIP003 plugin version, see it's [document](cmd/sip003/README) for
 
 ## License
 
-AGPL3
+~~Used to be AGPL3~~
+Relicensed to MIT License.
