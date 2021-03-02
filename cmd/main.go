@@ -2,9 +2,10 @@ package main
 
 import (
 	"flag"
-	"github.com/Qv2ray/gun/pkg/impl"
 	"log"
 	"strings"
+
+	"github.com/Qv2ray/gun/pkg/impl"
 )
 
 var (

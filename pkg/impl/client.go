@@ -2,19 +2,18 @@ package impl
 
 import (
 	"context"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"log"
 	"net"
 	"sync"
 	"time"
 
 	"github.com/Qv2ray/gun/pkg/cert"
-
 	"github.com/Qv2ray/gun/pkg/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/backoff"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/status"
 )
 
 type GunServiceClientImpl struct {

@@ -2,8 +2,6 @@ package impl
 
 import (
 	"crypto/tls"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"io/ioutil"
 	"log"
 	"net"
@@ -12,7 +10,9 @@ import (
 
 	"github.com/Qv2ray/gun/pkg/proto"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/status"
 )
 
 type GunServiceServerImpl struct {
