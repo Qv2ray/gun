@@ -11,7 +11,7 @@ var (
 	RunMode     = flag.String("mode", "", "run mode. must be client or server")
 	LocalAddr   = flag.String("local", "", "local address to listen")
 	RemoteAddr  = flag.String("remote", "", "remote address to connect")
-	ServiceName = flag.String("name", "", "")
+	ServiceName = flag.String("name", "GunService", "")
 	CertPath    = flag.String("cert", "", "(server) certificate (*.pem) path")
 	KeyPath     = flag.String("key", "", "(server) certificate key (*.key) path")
 	ServerName  = flag.String("sni", "", "(client) optionally override SNI")
